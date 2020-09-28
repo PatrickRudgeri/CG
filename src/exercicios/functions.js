@@ -3,7 +3,7 @@ function createPlaneGround(scene, scale, color) {
     planeGeometry.translate(.0, 0.0, -0.02); // To avoid conflict with the axeshelper
     var planeMaterial = new THREE.MeshBasicMaterial({
         color: color,
-        side: THREE.FrontSide//DoubleSide,
+        side: THREE.DoubleSide,
     });
     var plane = new THREE.Mesh(planeGeometry, planeMaterial);
     // add the plane to the scene

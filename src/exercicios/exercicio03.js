@@ -23,10 +23,6 @@ function main() {
             createCube(scene, {width: 4, height: 4, depth: 4}, {x: i*8, y: j*8, z: 2.0});
         }
     }
-    // create a cylinder
-    // createCylinder(scene, {radiusTop: 2, radiusBottom: 2, height: 4}, {x: 8.0, y: 8.0, z: 2.0});
-    // create a sphere
-    // createSphere(scene, {radius: 2.0}, {x: -8.0, y: -8.0, z: 2.0});
 
     // Use this to show information onscreen
     controls = new InfoBox();
