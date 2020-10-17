@@ -3,7 +3,7 @@ function main() {
     var scene = new THREE.Scene();    // Create main scene
     var renderer = initRenderer();    // View function in util/utils
     var camera = initCamera(new THREE.Vector3(0, 0, 30)); // Init camera in this position
-    var light = initDefaultLighting(scene, new THREE.Vector3(0, 0, 20));
+    var light = initDefaultLighting(scene, new THREE.Vector3(20, 20, 20));
     var trackballControls = new THREE.TrackballControls(camera, renderer.domElement);
 
     // To use the keyboard
@@ -16,27 +16,27 @@ function main() {
     var axesHelper = new THREE.AxesHelper(20);
     scene.add(axesHelper);
 
-    var paramSphere = {size: 0.2, color: 'rgb(180,180,255)'};
-    var paramCylinder = {height: 2, color: 'rgb(100,255,100)'};
+    var paramSphere = {size: 0.2, color: 'rgb(20,255,20)'};
+    var paramCylinder = {height: 2, color: 'rgb(20,20,255)'};
 
     var s_0 = createSphere({size: 0.4, color: 'rgb(255, 0, 0)'});
     var s_1C = createSphere(paramSphere);
     var s_1D = createSphere(paramSphere);
-    // var s_1E = createSphere(paramSphere);
+    var s_1E = createSphere(paramSphere);
 
     scene.add(s_0);
 
     var c0_1C = createCylinder(paramCylinder);
     var c0_1D = createCylinder(paramCylinder);
-    // var c0_1E = createCylinder(paramCylinder);
+    var c0_1E = createCylinder(paramCylinder);
 
     s_0.add(c0_1C);
     s_0.add(c0_1D);
-    // s_0.add(c0_1E);
+    s_0.add(c0_1E);
 
     c0_1C.add(s_1C);
     c0_1D.add(s_1D);
-    // c0_1E.add(s_1E);
+    c0_1E.add(s_1E);
 
 
     // Listen window size changes
@@ -67,10 +67,10 @@ function main() {
         s_0.matrixAutoUpdate = false;
         s_1C.matrixAutoUpdate = false;
         s_1D.matrixAutoUpdate = false;
-        // s_1E.matrixAutoUpdate = false;
+        s_1E.matrixAutoUpdate = false;
         c0_1C.matrixAutoUpdate = false;
         c0_1D.matrixAutoUpdate = false;
-        // c0_1E.matrixAutoUpdate = false;
+        c0_1E.matrixAutoUpdate = false;
 
         var mat4 = new THREE.Matrix4();
 
@@ -78,13 +78,13 @@ function main() {
         s_0.matrix.identity();
         s_1C.matrix.identity();
         s_1D.matrix.identity();
-        // s_1E.matrix.identity();
+        s_1E.matrix.identity();
         c0_1C.matrix.identity();
         c0_1D.matrix.identity();
-        // c0_1E.matrix.identity();
+        c0_1E.matrix.identity();
 
         //movendo verticalmente s_0 (centro da estrutura)
-        s_0.matrix.multiply(mat4.makeTranslation(0.0, 7.0, 0.0)); //fixme: corrigir essa altura depois de definir angulo de abertura pernas
+        s_0.matrix.multiply(mat4.makeTranslation(0.0, 7.0, 0.0)); //fixme: corrigir essa altura
 
 
         // Will execute T1 and then R1
@@ -93,12 +93,17 @@ function main() {
 
         s_1C.matrix.multiply(mat4.makeTranslation(0.0, 1.0, 0.0));
 
+        //começo da perna direita
         c0_1D.matrix.multiply(mat4.makeRotationZ(degreesToRadians(-30))); // R1
-        c0_1D.matrix.multiply(mat4.makeTranslation(-1.0*Math.cos(degreesToRadians(30)), -1.0*Math.sin(degreesToRadians(30)), 0.0)); // T1
+        c0_1D.matrix.multiply(mat4.makeTranslation(-0.1, -1, 0.0)); // T1
 
-        s_1D.matrix.multiply(mat4.makeTranslation(-1.0, 0.0, 0.0)); // T1
+        s_1D.matrix.multiply(mat4.makeTranslation(0.0, -1*Math.cos(degreesToRadians(-30)), 0.0)); // T1
 
+        // começo da perna esquerda
+        c0_1E.matrix.multiply(mat4.makeRotationZ(degreesToRadians(30))); // R1
+        c0_1E.matrix.multiply(mat4.makeTranslation(0.1, -1, 0.0)); // T1
 
+        s_1E.matrix.multiply(mat4.makeTranslation(0.0, -1*Math.cos(degreesToRadians(30)), 0.0)); // T1
     }
 
     function buildInterface() {
