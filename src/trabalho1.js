@@ -2,9 +2,18 @@ function main() {
     var stats = initStats();          // To show FPS information
     var scene = new THREE.Scene();    // Create main scene
     var renderer = initRenderer();    // View function in util/utils
-    var camera = initCamera(new THREE.Vector3(0, 0, 40)); // Init camera in this position
+    var camera = initCamera(new THREE.Vector3(20, 20, 30)); // Init camera in this position
     var light = initDefaultLighting(scene, new THREE.Vector3(40, 40, 40));
     var trackballControls = new THREE.TrackballControls(camera, renderer.domElement);
+
+    // para sombreamento
+    var spotLight = new THREE.SpotLight("rgb(50, 50, 50)");
+    setSpotLight(new THREE.Vector3(40, 40, 40));
+    scene.add(spotLight);
+
+    var groundPlane = createGroundPlane(50, 50); // width and height
+    groundPlane.rotateX(degreesToRadians(-90));
+    scene.add(groundPlane);
 
     // To use the keyboard
     var keyboard = new KeyboardState();
@@ -13,7 +22,9 @@ function main() {
     var d2R = degreesToRadians;
     var angle = [
         d2R(180), d2R(180), d2R(90), // braço esquerdo
-        d2R(160), d2R(0), d2R(90) // perna esquerda
+        d2R(160), d2R(0), d2R(0), // perna esquerda
+        d2R(180), d2R(180), d2R(90), // braço direito
+        d2R(160), d2R(0), d2R(0), // perna direita
     ];
     var angleInicial = angle.slice(); //copia dos valores originais de angle
 
@@ -38,11 +49,15 @@ function main() {
     var s_2C = createSphere(paramSphere);
     var s_3C = createSphere(paramSphere);
     var s_3D = createSphere(paramSphere);
+    var s_4D = createSphere(paramSphere);
+    var s_5D = createSphere(paramSphere);
     var s_3E = createSphere(paramSphere);
     var s_4E = createSphere(paramSphere);
     var s_5E = createSphere(paramSphere);
     var s_2PE = createSphere(paramSphere);
-    // var s_3PE = createSphere(paramSphere);
+    var s_3PE = createSphere(paramSphere);
+    var s_2PD = createSphere(paramSphere);
+    var s_3PD = createSphere(paramSphere);
 
     scene.add(s_0);
 
@@ -55,8 +70,12 @@ function main() {
     var c2_3E = createCylinder(paramCylinder);
     var c3_4E = createCylinder(paramCylinder);
     var c4_5E = createCylinder(paramCylinder);
+    var c3_4D = createCylinder(paramCylinder);
+    var c4_5D = createCylinder(paramCylinder);
     var c1_2PE = createCylinder(paramCylinder);
-    // var c2_3PE = createCylinder(paramCylinder);
+    var c2_3PE = createCylinder(paramCylinder);
+    var c1_2PD = createCylinder(paramCylinder);
+    var c2_3PD = createCylinder(paramCylinder);
 
     s_0.add(c0_1C);
     s_0.add(c0_1D);
@@ -87,8 +106,20 @@ function main() {
     //perna esquerda
     s_1E.add(c1_2PE);
     c1_2PE.add(s_2PE);
-    // s_2PE.add(c2_3PE);
-    // c2_3PE.add(s_3PE);
+    s_2PE.add(c2_3PE);
+    c2_3PE.add(s_3PE);
+
+    //braço direito
+    s_3D.add(c3_4D);
+    c3_4D.add(s_4D);
+    s_4D.add(c4_5D);
+    c4_5D.add(s_5D);
+
+    //perna esquerda
+    s_1D.add(c1_2PD);
+    c1_2PD.add(s_2PD);
+    s_2PD.add(c2_3PD);
+    c2_3PD.add(s_3PD);
 
 
     // Listen window size changes
@@ -105,6 +136,7 @@ function main() {
         var sphereGeometry = new THREE.SphereGeometry(params.size, 32, 32);
         var sphereMaterial = new THREE.MeshPhongMaterial({color: params.color});
         var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+            sphere.castShadow = true;
         vertices.push(sphere);
         return sphere;
     }
@@ -113,6 +145,7 @@ function main() {
         var cylinderGeometry = new THREE.CylinderGeometry(0.1, 0.1, params.height, 25);
         var cylinderMaterial = new THREE.MeshPhongMaterial({color: params.color});
         var cylinder = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
+            cylinder.castShadow = true;
         arestas.push(cylinder);
         return cylinder;
     }
@@ -132,11 +165,13 @@ function main() {
         estruturaFixaCentral();
 
         bracoEsquerdo();
+        bracoDireito();
         pernaEsquerda();
+        pernaDireita();
 
         function estruturaFixaCentral() {
             //movendo verticalmente s_0 (centro da estrutura)
-            s_0.matrix.multiply(mat4.makeTranslation(0.0, 7.0, 0.0)); //fixme: corrigir essa altura
+            s_0.matrix.multiply(mat4.makeTranslation(0.0, 6.0, 0.0)); //fixme: corrigir essa altura
 
             // segmento fixo do tronco inferior
             c0_1C.matrix.multiply(mat4.makeRotationZ(0.0));
@@ -197,31 +232,53 @@ function main() {
             // mão esquerda
             s_5E.matrix.multiply(mat4.makeTranslation(0, 1, 0.0));
         }
+        function bracoDireito() {
+            c3_4D.matrix.multiply(mat4.makeRotationZ(-angle[6]));
+            c3_4D.matrix.multiply(mat4.makeTranslation(0, 1, 0.0));
+
+            c3_4D.matrix.multiply(mat4.makeRotationY(-angle[7]));
+
+            // cotovelo
+            s_4D.matrix.multiply(mat4.makeTranslation(0, 1, 0.0));
+
+            // segmento movel do antebraço direito
+            c4_5D.matrix.multiply(mat4.makeRotationZ(angle[8]));
+            c4_5D.matrix.multiply(mat4.makeTranslation(0, 1, 0.0));
+            // mão direita
+            s_5D.matrix.multiply(mat4.makeTranslation(0, 1, 0.0));
+        }
 
         function pernaEsquerda() {
-            s_1E.add(new THREE.AxesHelper(20));
-            // c1_2PE.matrix.multiply(mat4.makeTranslation(0, -1, 0));
-
             c1_2PE.matrix.multiply(mat4.makeRotationZ(angle[3]));
             c1_2PE.matrix.multiply(mat4.makeTranslation(0, 1, 0));
 
-            // // c1_2PE.matrix.multiply(mat4.makeRotationY(degreesToRadians(90)));
+            c1_2PE.matrix.multiply(mat4.makeTranslation(0, -1, 0));
+            c1_2PE.matrix.multiply(mat4.makeRotationX(angle[4]));
+            c1_2PE.matrix.multiply(mat4.makeTranslation(0, 1, 0));
 
-
-
-            // c1_2PE.matrix.multiply(mat4.makeTranslation(0, -2, 0));
-            c1_2PE.matrix.multiply(mat4.makeRotationX(-angle[4]));
-            // c1_2PE.matrix.multiply(mat4.makeTranslation(0, -1, 0));
-
-            //
-            // // joelho
+            // joelho
             s_2PE.matrix.multiply(mat4.makeTranslation(0, 1, 0));
             //
-            // //
-            // c2_3PE.matrix.multiply(mat4.makeRotationZ(-angle[5]));
-            // c2_3PE.matrix.multiply(mat4.makeTranslation(0, 1, 0.0));
-            // // pé esquerdo
-            // s_3PE.matrix.multiply(mat4.makeTranslation(0, 1, 0.0));
+            c2_3PE.matrix.multiply(mat4.makeRotationX(-angle[5]));
+            c2_3PE.matrix.multiply(mat4.makeTranslation(0, 1, 0.0));
+            // pé esquerdo
+            s_3PE.matrix.multiply(mat4.makeTranslation(0, 1, 0.0));
+        }
+        function pernaDireita() {
+            c1_2PD.matrix.multiply(mat4.makeRotationZ(-angle[9]));
+            c1_2PD.matrix.multiply(mat4.makeTranslation(0, 1, 0));
+
+            c1_2PD.matrix.multiply(mat4.makeTranslation(0, -1, 0));
+            c1_2PD.matrix.multiply(mat4.makeRotationX(angle[10]));
+            c1_2PD.matrix.multiply(mat4.makeTranslation(0, 1, 0));
+
+            // joelho
+            s_2PD.matrix.multiply(mat4.makeTranslation(0, 1, 0));
+            //
+            c2_3PD.matrix.multiply(mat4.makeRotationX(-angle[11]));
+            c2_3PD.matrix.multiply(mat4.makeTranslation(0, 1, 0.0));
+            // pé esquerdo
+            s_3PD.matrix.multiply(mat4.makeTranslation(0, 1, 0.0));
         }
 
     }
@@ -239,18 +296,28 @@ function main() {
     }
 
     function buildInterface() {
-        var controls = new function () {
-            r2D = radiansToDegrees;
+        let controls = new function () {
+            let r2D = radiansToDegrees;
             this.bracoEsqZ = r2D(angleInicial[0]); //angulo inicial do braco Esq (em relação ao eixo Z da scene)
             this.bracoEsqY = r2D(angleInicial[1]); //angulo inicial do braco Esq (em relação ao eixo Y da scene)
             this.cotoveloEsq = r2D(angleInicial[2]); //angulo inicial do cotovelo Esq (em relação ao eixo Z do obj pai)
 
             this.pernaEsqZ = r2D(angleInicial[3]); //angulo inicial da perna Esq (em relação ao eixo Z da scene)
-            this.pernaEsqY = r2D(angleInicial[4]); //angulo inicial da perna Esq (em relação ao eixo Y da scene)
-            this.joelhoEsq = r2D(angleInicial[5]); //angulo inicial do joelho Esq (em relação ao eixo Y da scene)
+            this.pernaEsqX = r2D(angleInicial[4]); //angulo inicial da perna Esq (em relação ao eixo X da scene)
+            this.joelhoEsq = r2D(angleInicial[5]); //angulo inicial do joelho Esq (em relação ao eixo X da scene)
+
+            this.bracoDirZ = r2D(angleInicial[6]);
+            this.bracoDirY = r2D(angleInicial[7]);
+            this.cotoveloDir = r2D(angleInicial[8]);
+
+            this.pernaDirZ = r2D(angleInicial[3]);
+            this.pernaDirX = r2D(angleInicial[4]);
+            this.joelhoDir = r2D(angleInicial[5]);
 
             this.onReset = function (){
                 resetAngles();
+                gui.destroy();
+                buildInterface();
             };
 
             this.rotate = function () {
@@ -259,8 +326,18 @@ function main() {
                 angle[2] = degreesToRadians(this.cotoveloEsq);
 
                 angle[3] = degreesToRadians(this.pernaEsqZ);
-                angle[4] = degreesToRadians(this.pernaEsqY);
+                angle[4] = degreesToRadians(this.pernaEsqX);
                 angle[5] = degreesToRadians(this.joelhoEsq);
+
+                angle[6] = degreesToRadians(this.bracoDirZ);
+                angle[7] = degreesToRadians(this.bracoDirY);
+                angle[8] = degreesToRadians(this.cotoveloDir);
+
+                angle[9] = degreesToRadians(this.pernaDirZ);
+                angle[10] = degreesToRadians(this.pernaDirX);
+                angle[11] = degreesToRadians(this.joelhoDir);
+                angle[12] = degreesToRadians(this.joelhoDir);
+
                 rotateCylinder();
             };
         };
@@ -276,8 +353,16 @@ function main() {
         createSlider("cotoveloEsq", "Cotovelo Esquerdo", 0, 150);
         //perna esquerda
         createSlider("pernaEsqZ", "Perna Esq Z", 160, 250);
-        createSlider("pernaEsqY", "Perna Esq Y", 0, 360);
+        createSlider("pernaEsqX", "Perna Esq X", 0, 180);
         createSlider("joelhoEsq", "Joelho Esquerdo", 0, 150);
+        // braço direito
+        createSlider("bracoDirZ", "Braço Dir Z", 75, 285);
+        createSlider("bracoDirY", "Braço Dir Y", 75, 285);
+        createSlider("cotoveloDir", "Cotovelo Direito", 0, 150);
+        //perna direita
+        createSlider("pernaDirZ", "Perna Dir Z", 160, 250);
+        createSlider("pernaDirX", "Perna Dir X", 0, 180);
+        createSlider("joelhoDir", "Joelho Direito", 0, 150);
 
 
         function createSlider(varName, sliderTitle, rangeMin, rangeMax){
@@ -287,6 +372,19 @@ function main() {
                 })
                 .name(sliderTitle);
         }
+    }
+
+    function setSpotLight(position) {
+        spotLight.position.copy(position);
+        spotLight.shadow.mapSize.width = 2048;
+        spotLight.shadow.mapSize.height = 2048;
+        spotLight.shadow.camera.fov = degreesToRadians(20);
+        spotLight.castShadow = true;
+        spotLight.decay = 2;
+        spotLight.penumbra = 0.05;
+        spotLight.name = "Spot Light"
+
+        scene.add(spotLight);
     }
 
     function keyboardUpdate() {
@@ -327,7 +425,7 @@ function main() {
         trackballControls.update();
         keyboardUpdate();
         rotateCylinder();
-        lightFollowingCamera(light, camera);
+        lightFollowingCamera(spotLight, camera);
         requestAnimationFrame(render); // Show events
         renderer.render(scene, camera) // Render scene
     }
