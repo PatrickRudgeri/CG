@@ -30,7 +30,7 @@ function main() {
         d2R(160), d2R(0), // perna direita
         d2R(0), //joelho direito
     ];
-    var indexAngle = [0];
+    var indexAngle = [0, 1]; //usado no mapeamento do teclado
     var angleInicial = angle.slice(); //copia dos valores originais de angle
 
     // set lado e segmento ativo
@@ -422,20 +422,25 @@ function main() {
 
         if (keyboard.down("1") || segmentoAtivo === 1) {
             let index = (!ladoEsquerdoAtivo) * 6 + segmentoAtivo;
-            indexAngle = [index-1, index];
+            // indexAngle = [index-1, index];
+            indexAngle[0] = index-1;
+            indexAngle[1] = index;
+
         }
         if (keyboard.down("2") || segmentoAtivo === 2) {
             segmentoAtivo = 2;
-            indexAngle = [(!ladoEsquerdoAtivo) * 6 + segmentoAtivo];
+            indexAngle[0] = (!ladoEsquerdoAtivo) * 6 + segmentoAtivo;
         }
         if (keyboard.down("3") || segmentoAtivo === 3) {
             segmentoAtivo = 3;
             let index = (!ladoEsquerdoAtivo) * 6 + segmentoAtivo;
-            indexAngle = [index-1, index];
+            // indexAngle = [index, index+1];
+            indexAngle[0] = index;
+            indexAngle[1] = index+1;
         }
         if (keyboard.down("4") || segmentoAtivo === 4) {
             segmentoAtivo = 4;
-            indexAngle = [(!ladoEsquerdoAtivo) * 6 + segmentoAtivo + 1];
+            indexAngle[0] = (!ladoEsquerdoAtivo) * 6 + segmentoAtivo + 1;
         }
         //Para os braços e a perna usar as 4 teclas
         //Para o cotovelo e joelho usar Left e Right apenas
@@ -447,12 +452,12 @@ function main() {
         }
         if (keyboard.pressed("up")) {
             //Apenas para segmento 1 (braço) e 3 (perna)
-            if (!(indexAngle[1] in [2, 5, 8, 11]))
+            if (segmentoAtivo in [1, 3])
                 angle[indexAngle[1]] += (ladoEsquerdoAtivo ? 1 : -1) * angleStep;
         }
         if (keyboard.pressed("down")) {
             //Apenas para segmento 1 (braço) e 3 (perna)
-            if (!(indexAngle[1] in [2, 5, 8, 11]))
+            if (segmentoAtivo in [1, 3])
                 angle[indexAngle[1]] += (!ladoEsquerdoAtivo ? 1 : -1) * angleStep;
         }
 
