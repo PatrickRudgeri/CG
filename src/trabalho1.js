@@ -21,14 +21,19 @@ function main() {
     // Set angles of rotation
     var d2R = degreesToRadians;
     var angle = [
-        d2R(180), d2R(180), d2R(90), // braço esquerdo
-        d2R(160), d2R(0), d2R(0), // perna esquerda
-        d2R(180), d2R(180), d2R(90), // braço direito
-        d2R(160), d2R(0), d2R(0), // perna direita
+        d2R(180), d2R(180), // braço esquerdo
+        d2R(90), //cotovelo esquerdo
+        d2R(160), d2R(0), // perna esquerda
+        d2R(0), // joelho esquerdo
+        d2R(180), d2R(180), // braço direito
+        d2R(90), // cotovelo direito
+        d2R(160), d2R(0), // perna direita
+        d2R(0), //joelho direito
     ];
+    var indexAngle = [0];
     var angleInicial = angle.slice(); //copia dos valores originais de angle
 
-    // set lado ativo
+    // set lado e segmento ativo
     var ladoEsquerdoAtivo = true;
     var segmentoAtivo = 1;
 
@@ -129,6 +134,7 @@ function main() {
     }, false);
 
     var ladoAtivoMensagem = new SecondaryBox("Lado Esquerdo Ativo");
+    // var segmentoAtivoMensagem = new SecondaryBox("Segmento 1 Ativo");
 
     buildInterface();
     render();
@@ -293,6 +299,10 @@ function main() {
             ladoAtivoMensagem.changeMessage("Lado Direito Ativo");
     }
 
+    // function changeSegmento() {
+    //     ladoAtivoMensagem.changeMessage("Lado Esquerdo Ativo");
+    // }
+
     function resetAngles() {
         angle = angleInicial.slice();
         console.log("Resetando ângulos");
@@ -313,9 +323,9 @@ function main() {
             this.bracoDirY = r2D(angleInicial[7]);
             this.cotoveloDir = r2D(angleInicial[8]);
 
-            this.pernaDirZ = r2D(angleInicial[3]);
-            this.pernaDirX = r2D(angleInicial[4]);
-            this.joelhoDir = r2D(angleInicial[5]);
+            this.pernaDirZ = r2D(angleInicial[9]);
+            this.pernaDirX = r2D(angleInicial[10]);
+            this.joelhoDir = r2D(angleInicial[11]);
 
             this.onReset = function () {
                 resetAngles();
@@ -342,6 +352,10 @@ function main() {
 
                 rotateCylinder();
             };
+
+            this.onAngleChange = function () {
+
+            }
         };
 
         // GUI interface
@@ -390,59 +404,50 @@ function main() {
     }
 
     function keyboardUpdate() {
+        let angleStep = Math.PI / 90;
 
         keyboard.update();
-        var index = 0;
 
         if (keyboard.down("space")) {
             ladoEsquerdoAtivo = !ladoEsquerdoAtivo;
             changeLado();
         }
 
-        if (keyboard.down("1")) {
-            segmentoAtivo = 1;
-            index = (!ladoEsquerdoAtivo)*6+segmentoAtivo-1;
+        if (keyboard.down("1") || segmentoAtivo === 1) {
+            let index = (!ladoEsquerdoAtivo) * 6 + segmentoAtivo;
+            indexAngle = [index, index+1];
         }
-        if (keyboard.down("2")) {
+        if (keyboard.down("2") || segmentoAtivo === 2) {
             segmentoAtivo = 2;
-            index = (!ladoEsquerdoAtivo)*6+segmentoAtivo-1;
+            indexAngle = [(!ladoEsquerdoAtivo) * 6 + segmentoAtivo];
         }
-        if (keyboard.down("3")) {
+        if (keyboard.down("3") || segmentoAtivo === 3) {
             segmentoAtivo = 3;
-            index = (!ladoEsquerdoAtivo)*6+segmentoAtivo-1;
+            let index = (!ladoEsquerdoAtivo) * 6 + segmentoAtivo;
+            indexAngle = [index, index+1];
         }
-        if (keyboard.down("4")) {
+        if (keyboard.down("4") || segmentoAtivo === 4) {
             segmentoAtivo = 4;
-            index = (!ladoEsquerdoAtivo)*6+segmentoAtivo-1;
+            indexAngle = [(!ladoEsquerdoAtivo) * 6 + segmentoAtivo + 1];
         }
-
+        //Para os braços e a perna usar as 4 teclas
+        //Para o cotovelo e joelho usar Left e Right apenas
         if (keyboard.pressed("left")) {
-            angle[index] -= Math.PI/180;
-            // rotateCylinder();
-            console.log(index);
+            angle[indexAngle[0]] += (ladoEsquerdoAtivo ? 1 : -1) * angleStep;
         }
         if (keyboard.pressed("right")) {
-            angle[index] += Math.PI/180;
+            angle[indexAngle[0]] += (!ladoEsquerdoAtivo ? 1 : -1) * angleStep;
         }
         if (keyboard.pressed("up")) {
-            angle[index] += Math.PI/180;
+            //Apenas para segmento 1 (braço) e 3 (perna)
+            if (!(indexAngle[1] in [2, 5, 8, 11]))
+                angle[indexAngle[1] + 1] += (ladoEsquerdoAtivo ? 1 : -1) * angleStep;
         }
         if (keyboard.pressed("down")) {
-            angle[index] -= Math.PI/180;
+            //Apenas para segmento 1 (braço) e 3 (perna)
+            if (!(indexAngle[1] in [2, 5, 8, 11]))
+                angle[indexAngle[1] + 1] += (!ladoEsquerdoAtivo ? 1 : -1) * angleStep;
         }
-
-        // if ( keyboard.pressed("D") )  cube.rotateOnAxis(rotAxis, -angle );
-        //
-        // if ( keyboard.pressed("W") )
-        // {
-        //   scale+=.1;
-        //   cube.scale.set(scale, scale, scale);
-        // }
-        // if ( keyboard.pressed("S") )
-        // {
-        //   scale-=.1;
-        //   cube.scale.set(scale, scale, scale);
-        // }
 
     }
 
