@@ -2,7 +2,7 @@ function main() {
     var stats = initStats();          // To show FPS information
     var scene = new THREE.Scene();    // Create main scene
     var renderer = initRenderer();    // View function in util/utils
-    var camera = initCamera(new THREE.Vector3(20, 20, 30)); // Init camera in this position
+    var camera = initCamera(new THREE.Vector3(10, 10, 30)); // Init camera in this position
     var light = initDefaultLighting(scene, new THREE.Vector3(40, 40, 40));
     var trackballControls = new THREE.TrackballControls(camera, renderer.domElement);
 
@@ -21,11 +21,11 @@ function main() {
     // Set angles of rotation
     var d2R = degreesToRadians;
     var angle = [
-        d2R(180), d2R(180), // braço esquerdo
+        d2R(180), d2R(0), // braço esquerdo
         d2R(90), //cotovelo esquerdo
         d2R(160), d2R(0), // perna esquerda
         d2R(0), // joelho esquerdo
-        d2R(180), d2R(180), // braço direito
+        d2R(180), d2R(0), // braço direito
         d2R(90), // cotovelo direito
         d2R(160), d2R(0), // perna direita
         d2R(0), //joelho direito
@@ -225,32 +225,39 @@ function main() {
         }
 
         function bracoEsquerdo() {
+            //movendo e rotação na direção 1
             c3_4E.matrix.multiply(mat4.makeRotationZ(angle[0]));
             c3_4E.matrix.multiply(mat4.makeTranslation(0, 1, 0.0));
 
-            c3_4E.matrix.multiply(mat4.makeRotationY(angle[1]));
+            //rotação na direção 2
+            c3_4E.matrix.multiply(mat4.makeTranslation(0, -1, 0));
+            c3_4E.matrix.multiply(mat4.makeRotationX(angle[1]));
+            c3_4E.matrix.multiply(mat4.makeTranslation(0, 1, 0));
 
             // cotovelo
             s_4E.matrix.multiply(mat4.makeTranslation(0, 1, 0.0));
 
             // segmento movel do antebraço esquerdo
-            c4_5E.matrix.multiply(mat4.makeRotationZ(-angle[2]));
+            c4_5E.matrix.multiply(mat4.makeRotationZ(angle[2]));
             c4_5E.matrix.multiply(mat4.makeTranslation(0, 1, 0.0));
             // mão esquerda
             s_5E.matrix.multiply(mat4.makeTranslation(0, 1, 0.0));
         }
 
         function bracoDireito() {
+            // movendo e rotação na direção 1
             c3_4D.matrix.multiply(mat4.makeRotationZ(-angle[6]));
             c3_4D.matrix.multiply(mat4.makeTranslation(0, 1, 0.0));
 
-            c3_4D.matrix.multiply(mat4.makeRotationY(-angle[7]));
-
+            // rotação na direção 2
+            c3_4D.matrix.multiply(mat4.makeTranslation(0, -1, 0));
+            c3_4D.matrix.multiply(mat4.makeRotationX(-angle[7]));
+            c3_4D.matrix.multiply(mat4.makeTranslation(0, 1, 0));
             // cotovelo
             s_4D.matrix.multiply(mat4.makeTranslation(0, 1, 0.0));
 
             // segmento movel do antebraço direito
-            c4_5D.matrix.multiply(mat4.makeRotationZ(angle[8]));
+            c4_5D.matrix.multiply(mat4.makeRotationZ(-angle[8]));
             c4_5D.matrix.multiply(mat4.makeTranslation(0, 1, 0.0));
             // mão direita
             s_5D.matrix.multiply(mat4.makeTranslation(0, 1, 0.0));
@@ -364,20 +371,20 @@ function main() {
         gui.add(controls, 'onReset').name("Reset");
 
         // braço esquerdo
-        createSlider("bracoEsqZ", "Braço Esq Z", 75, 285);
-        createSlider("bracoEsqY", "Braço Esq Y", 75, 285);
+        createSlider("bracoEsqZ", "Braço Esq 1", 75, 285);
+        createSlider("bracoEsqY", "Braço Esq 2", -105, 105);
         createSlider("cotoveloEsq", "Cotovelo Esquerdo", 0, 150);
         //perna esquerda
-        createSlider("pernaEsqZ", "Perna Esq Z", 160, 250);
-        createSlider("pernaEsqX", "Perna Esq X", 0, 180);
+        createSlider("pernaEsqZ", "Perna Esq 1", 160, 250);
+        createSlider("pernaEsqX", "Perna Esq 2", 0, 180);
         createSlider("joelhoEsq", "Joelho Esquerdo", 0, 150);
         // braço direito
-        createSlider("bracoDirZ", "Braço Dir Z", 75, 285);
-        createSlider("bracoDirY", "Braço Dir Y", 75, 285);
+        createSlider("bracoDirZ", "Braço Dir 1", 75, 285);
+        createSlider("bracoDirY", "Braço Dir 2", -105, 105);
         createSlider("cotoveloDir", "Cotovelo Direito", 0, 150);
         //perna direita
-        createSlider("pernaDirZ", "Perna Dir Z", 160, 250);
-        createSlider("pernaDirX", "Perna Dir X", 0, 180);
+        createSlider("pernaDirZ", "Perna Dir 1", 160, 250);
+        createSlider("pernaDirX", "Perna Dir 2", 0, 180);
         createSlider("joelhoDir", "Joelho Direito", 0, 150);
 
 
@@ -415,7 +422,7 @@ function main() {
 
         if (keyboard.down("1") || segmentoAtivo === 1) {
             let index = (!ladoEsquerdoAtivo) * 6 + segmentoAtivo;
-            indexAngle = [index, index+1];
+            indexAngle = [index-1, index];
         }
         if (keyboard.down("2") || segmentoAtivo === 2) {
             segmentoAtivo = 2;
@@ -424,7 +431,7 @@ function main() {
         if (keyboard.down("3") || segmentoAtivo === 3) {
             segmentoAtivo = 3;
             let index = (!ladoEsquerdoAtivo) * 6 + segmentoAtivo;
-            indexAngle = [index, index+1];
+            indexAngle = [index-1, index];
         }
         if (keyboard.down("4") || segmentoAtivo === 4) {
             segmentoAtivo = 4;
@@ -441,12 +448,12 @@ function main() {
         if (keyboard.pressed("up")) {
             //Apenas para segmento 1 (braço) e 3 (perna)
             if (!(indexAngle[1] in [2, 5, 8, 11]))
-                angle[indexAngle[1] + 1] += (ladoEsquerdoAtivo ? 1 : -1) * angleStep;
+                angle[indexAngle[1]] += (ladoEsquerdoAtivo ? 1 : -1) * angleStep;
         }
         if (keyboard.pressed("down")) {
             //Apenas para segmento 1 (braço) e 3 (perna)
             if (!(indexAngle[1] in [2, 5, 8, 11]))
-                angle[indexAngle[1] + 1] += (!ladoEsquerdoAtivo ? 1 : -1) * angleStep;
+                angle[indexAngle[1]] += (!ladoEsquerdoAtivo ? 1 : -1) * angleStep;
         }
 
     }
