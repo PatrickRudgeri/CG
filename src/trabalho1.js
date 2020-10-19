@@ -11,7 +11,7 @@ function main() {
     setSpotLight(new THREE.Vector3(40, 40, 40));
     scene.add(spotLight);
 
-    var groundPlane = createGroundPlane(50, 50); // width and height
+    var groundPlane = createGroundPlane(100, 100); // width and height
     groundPlane.rotateX(degreesToRadians(-90));
     scene.add(groundPlane);
 
@@ -30,6 +30,7 @@ function main() {
 
     // set lado ativo
     var ladoEsquerdoAtivo = true;
+    var segmentoAtivo = 1;
 
     // listas de arestas e vertices
     var arestas = [];
@@ -136,7 +137,7 @@ function main() {
         var sphereGeometry = new THREE.SphereGeometry(params.size, 32, 32);
         var sphereMaterial = new THREE.MeshPhongMaterial({color: params.color});
         var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-            sphere.castShadow = true;
+        sphere.castShadow = true;
         vertices.push(sphere);
         return sphere;
     }
@@ -145,17 +146,17 @@ function main() {
         var cylinderGeometry = new THREE.CylinderGeometry(0.1, 0.1, params.height, 25);
         var cylinderMaterial = new THREE.MeshPhongMaterial({color: params.color});
         var cylinder = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
-            cylinder.castShadow = true;
+        cylinder.castShadow = true;
         arestas.push(cylinder);
         return cylinder;
     }
 
     function rotateCylinder() {
-        vertices.forEach(function(s){
+        vertices.forEach(function (s) {
             s.matrixAutoUpdate = false;
             s.matrix.identity(); // resetting matrices
         });
-        arestas.forEach(function(c){
+        arestas.forEach(function (c) {
             c.matrixAutoUpdate = false;
             c.matrix.identity(); // resetting matrices
         })
@@ -232,6 +233,7 @@ function main() {
             // mão esquerda
             s_5E.matrix.multiply(mat4.makeTranslation(0, 1, 0.0));
         }
+
         function bracoDireito() {
             c3_4D.matrix.multiply(mat4.makeRotationZ(-angle[6]));
             c3_4D.matrix.multiply(mat4.makeTranslation(0, 1, 0.0));
@@ -264,6 +266,7 @@ function main() {
             // pé esquerdo
             s_3PE.matrix.multiply(mat4.makeTranslation(0, 1, 0.0));
         }
+
         function pernaDireita() {
             c1_2PD.matrix.multiply(mat4.makeRotationZ(-angle[9]));
             c1_2PD.matrix.multiply(mat4.makeTranslation(0, 1, 0));
@@ -284,7 +287,7 @@ function main() {
     }
 
     function changeLado() {
-        if(ladoEsquerdoAtivo)
+        if (ladoEsquerdoAtivo)
             ladoAtivoMensagem.changeMessage("Lado Esquerdo Ativo");
         else
             ladoAtivoMensagem.changeMessage("Lado Direito Ativo");
@@ -314,7 +317,7 @@ function main() {
             this.pernaDirX = r2D(angleInicial[4]);
             this.joelhoDir = r2D(angleInicial[5]);
 
-            this.onReset = function (){
+            this.onReset = function () {
                 resetAngles();
                 gui.destroy();
                 buildInterface();
@@ -336,7 +339,6 @@ function main() {
                 angle[9] = degreesToRadians(this.pernaDirZ);
                 angle[10] = degreesToRadians(this.pernaDirX);
                 angle[11] = degreesToRadians(this.joelhoDir);
-                angle[12] = degreesToRadians(this.joelhoDir);
 
                 rotateCylinder();
             };
@@ -365,7 +367,7 @@ function main() {
         createSlider("joelhoDir", "Joelho Direito", 0, 150);
 
 
-        function createSlider(varName, sliderTitle, rangeMin, rangeMax){
+        function createSlider(varName, sliderTitle, rangeMin, rangeMax) {
             gui.add(controls, varName, rangeMin, rangeMax)
                 .onChange(function (e) {
                     controls.rotate()
@@ -390,22 +392,45 @@ function main() {
     function keyboardUpdate() {
 
         keyboard.update();
-        //TODO: implementar essa função
+        var index = 0;
 
-        // var angle = degreesToRadians(10);
-        // var rotAxis = new THREE.Vector3(0,0,1); // Set Z axis
-        //
-        // if ( keyboard.pressed("left") )     cube.translateX( -1 );
-        // if ( keyboard.pressed("right") )    cube.translateX(  1 );
-        // if ( keyboard.pressed("up") )       cube.translateY(  1 );
-        // if ( keyboard.pressed("down") )     cube.translateY( -1 );
-        // if ( keyboard.pressed("pageup") )   cube.translateZ(  1 );
         if (keyboard.down("space")) {
             ladoEsquerdoAtivo = !ladoEsquerdoAtivo;
             changeLado();
         }
-        //
-        // if ( keyboard.pressed("A") )  cube.rotateOnAxis(rotAxis,  angle );
+
+        if (keyboard.down("1")) {
+            segmentoAtivo = 1;
+            index = (!ladoEsquerdoAtivo)*6+segmentoAtivo-1;
+        }
+        if (keyboard.down("2")) {
+            segmentoAtivo = 2;
+            index = (!ladoEsquerdoAtivo)*6+segmentoAtivo-1;
+        }
+        if (keyboard.down("3")) {
+            segmentoAtivo = 3;
+            index = (!ladoEsquerdoAtivo)*6+segmentoAtivo-1;
+        }
+        if (keyboard.down("4")) {
+            segmentoAtivo = 4;
+            index = (!ladoEsquerdoAtivo)*6+segmentoAtivo-1;
+        }
+
+        if (keyboard.pressed("left")) {
+            angle[index] -= Math.PI/180;
+            // rotateCylinder();
+            console.log(index);
+        }
+        if (keyboard.pressed("right")) {
+            angle[index] += Math.PI/180;
+        }
+        if (keyboard.pressed("up")) {
+            angle[index] += Math.PI/180;
+        }
+        if (keyboard.pressed("down")) {
+            angle[index] -= Math.PI/180;
+        }
+
         // if ( keyboard.pressed("D") )  cube.rotateOnAxis(rotAxis, -angle );
         //
         // if ( keyboard.pressed("W") )
@@ -418,6 +443,7 @@ function main() {
         //   scale-=.1;
         //   cube.scale.set(scale, scale, scale);
         // }
+
     }
 
     function render() {
