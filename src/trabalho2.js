@@ -3,8 +3,8 @@ function main() {
     var scene = new THREE.Scene();    // Create main scene
     var renderer = initRenderer();    // View function in util/utils
 
-    var camera = initCamera(new THREE.Vector3(30, 5, 0)); //vista lateral
-    // var camera = initCamera(new THREE.Vector3(0, 5, 35)); //vista frontal
+    // var camera = initCamera(new THREE.Vector3(30, 5, 0)); //vista lateral
+    var camera = initCamera(new THREE.Vector3(20, 5, 20));
     var light = initDefaultLighting(scene, new THREE.Vector3(40, 40, 40));
     var trackballControls = new THREE.TrackballControls(camera, renderer.domElement);
     // Show axes
@@ -18,9 +18,6 @@ function main() {
     // adicionar plano base
     var groundPlane;
     adicionarPlanoBase();
-
-    // To use the keyboard
-    // var keyboard = new KeyboardState();
 
     // ângulos e auxiliares
     var d2R = degreesToRadians;
@@ -37,10 +34,6 @@ function main() {
     ];
     // var indexAngle = [0, 1]; //usado no mapeamento do teclado
     var angleInicial = angle.slice(); //cópia dos valores originais de angle
-
-    // // set lado e segmento ativo
-    // var ladoEsquerdoAtivo = true;
-    // var segmentoAtivo = 1;
 
     // listas de segmentos e juntas
     var segmentos = [];
@@ -79,11 +72,10 @@ function main() {
     var pauseAnimation = false;
     var stopAnimation = false;
     var startAnimation = false;
-    var inverterSentidoBracos = false;
-    var inverterSentidoPernas = true;
+    var inverterSentido = true;
+    var limAnguloPerna = {min: degreesToRadians(-20), max: degreesToRadians(20)};
 
     var speed = degreesToRadians(0.5);
-    const G = 9.82;
     var clock = new THREE.Clock();
     var t = 0.0;
 
@@ -96,8 +88,6 @@ function main() {
     window.addEventListener('resize', function () {
         onWindowResize(camera, renderer)
     }, false);
-
-    // var ladoAtivoMensagem = new SecondaryBox("Lado Esquerdo Ativo");
 
     buildInterface();
     render();
@@ -200,18 +190,6 @@ function main() {
         return (Math.cos(angQuadril) * sizeSegmentos.quadril) + sizeSegmentos.femur + sizeSegmentos.tibia + (sizeJuntas * 0.9);
     }
 
-    function getSizeObj(obj) {
-        var box = new THREE.Box3().setFromObject(obj);
-        var min = box.min;
-        var max = box.max;
-
-        var size = new THREE.Box3();
-        size.x = max.x - min.x;
-        size.y = max.y - min.y;
-        size.z = max.z - min.z;
-        return size;
-    }
-
     function getDistToGround(obj) {
         return new THREE.Box3().setFromObject(obj).min.y;
     }
@@ -228,8 +206,6 @@ function main() {
 
         var mat4 = new THREE.Matrix4();
 
-        let vSpeed = speed * Math.pow(Math.sin(Math.PI * t), 5);
-
         estruturaFixaCentral();
 
         bracoEsquerdo();
@@ -239,36 +215,59 @@ function main() {
         pernaDireita();
 
         function iniciarAnimacao() {
-            console.log("Iniciando animação...");//fixme: debug
-            if (angle[4] > degreesToRadians(20)) {
+            console.log("Iniciando animação...");
+            if (angle[4] > limAnguloPerna.max) {
                 startAnimation = false;
                 emRepouso = false;
-                angle[4] = degreesToRadians(20);
+                angle[4] = limAnguloPerna.max;
                 console.log("*INICIOU...");
-            } else
-                angle[4] += speed/5;
+            } else {
+                angle[4] += speed / 5;
+
+            }
         }
 
         function pararAnimacao() {
-            console.log("Parando animação...");//fixme: debug
+            console.log("Parando animação...");
             let a = degreesToRadians(1);
-            if (angle[4] >= -a && angle[4] <= a) { //trocar para analisar quando a dist. do "pé" e do chão é minima
-                stopAnimation = false;
-                emRepouso = true;
-                angle[4] = 0.0;
-                console.log("*PAROU...");
-            } else
-                angle[4] += angle[4] > 0 ? -speed/5 : speed/5;
+            if (Math.abs(angle[4]) <= a) {
+                let isJoelhoEsqInclinado = Math.abs(angle[5]) >= a;
+                let isJoelhoDirInclinado = Math.abs(angle[11]) >= a;
+
+                if (isJoelhoEsqInclinado || isJoelhoDirInclinado) {
+                    if (isJoelhoEsqInclinado)
+                        angle[5] -= speed / 2;
+                    if (isJoelhoDirInclinado)
+                        angle[11] -= speed / 2;
+                } else {
+                    stopAnimation = false;
+                    emRepouso = true;
+                    // angle[4] = 0.0;
+                    angle[5] = 0.0;
+                    angle[11] = 0.0;
+                    console.log("*PAROU...");
+                }
+            } else {
+                angle[4] += angle[4] > 0 ? -speed / 5 : speed / 5;
+            }
         }
 
         function caminhar() {
-            console.log("Caminhando...");//fixme: debug
-            if (angle[4] < degreesToRadians(-20) || angle[4] > degreesToRadians(20))
-                inverterSentidoPernas = !inverterSentidoPernas;
+            console.log("Caminhando...");
+            if (angle[4] < limAnguloPerna.min || angle[4] > limAnguloPerna.max) {
+                inverterSentido = !inverterSentido;
+            }
 
-            // //fixme: modificar essa regra para animação (está linear)
-            angle[4] += (inverterSentidoPernas ? -1 : 1) * speed;
-            // angle[4] += -vSpeed;
+            angle[4] += (inverterSentido ? -1 : 1) * speed;
+            //rotacionando os joelhos a partir da rotaçao da perna
+            if (!inverterSentido) {
+                angle[5] += -angle[4] * speed * 10;
+                angle[11] = 0;
+            }
+            if (inverterSentido) {
+                angle[5] = 0;
+                angle[11] += angle[4] * speed * 10;
+            }
         }
 
         function estruturaFixaCentral() {
@@ -325,7 +324,7 @@ function main() {
 
             objs.juntas.esq[3].matrix.multiply(mat4.makeTranslation(0.0, -metadeSegmOmb, 0.0));
 
-            // fixme: movendo os ombros conforme o movimento do braço (verificiar)
+            // movendo os ombros conforme o movimento do braço
             let rotOmbro = 0.0;
             let stepOmbro = angle[1] / 5;
             if (angle[0] !== 0)
@@ -333,7 +332,7 @@ function main() {
 
             objs.juntas.centro[2].matrix.multiply(mat4.makeRotationY(-rotOmbro));
 
-            // fixme: movendo o quadril conforme o movimento da perna (verificiar)
+            // movendo o quadril conforme o movimento da perna
             let rotQuadril = 0.0;
             let stepQuadril = angle[4] / 5;
             if (angle[4] !== 0)
@@ -346,48 +345,14 @@ function main() {
         }
 
         function bracoEsquerdo() {
-            // let R = sizeSegmentos.bracos;
-            // let W = Math.pow(G/R, 1/2);
-            // let vSpeed = -R * W * Math.sin(W*t + speed);
-
-            // if (emRepouso) {
-            //
-            //     // if (startAnimation) {
-            //
-            //     //     if (angle[1] <= degreesToRadians(-20)) {
-            //     //         startAnimation = false;
-            //     //         emRepouso = false;
-            //     //         angle[1] = degreesToRadians(-20.0);
-            //     //     } else
-            //     //         angle[1] -= speed/10;
-            //     // }
-            // } else {
-
             if (!pauseAnimation) {
-
-                // if (angle[1] < degreesToRadians(-20) ||  angle[1] > degreesToRadians(20))
-                //     inverterSentidoBracos = !inverterSentidoBracos;
+                angle[1] = -angle[4] / 2; //espelhando movimento da perna esq
 
                 //movendo o cotovelo com base no movimento do braço
                 if (angle[1] >= 0)
-                    angle[2] = angle[1];
-
-                angle[1] = -angle[4]; //fixme: espelhando movimento da perna esq
-                // //fixme: modificar essa regra para animação (está linear)
-                // angle[1] += (inverterSentidoBracos ? -1 : 1) * speed;
-                // angle[1] += vSpeed;
+                    angle[2] = angle[1] * 3;
             }
 
-            if (stopAnimation) {
-
-                //     console.log(angle[1]);
-                //     if (angle[1] >= -0.02 && angle[1] <= 0.02) {
-                //         stopAnimation = false;
-                //         emRepouso = true;
-                //         angle[1] = 0.0;
-                //     } else
-                //         angle[1] += angle[1] > 0 ? -speed / 10 : speed / 10;
-            }
             let metadeSegmBraco = getHalfSize("bracos");
             //movendo e rotação na direção 1
             objs.segmentos.esq[2].matrix.multiply(mat4.makeRotationZ(angle[0]));
@@ -410,10 +375,12 @@ function main() {
 
         function bracoDireito() {
             let metadeSegmBraco = getHalfSize("bracos");
-            //fixme: espelhando o movimento do braço esquerdo
-            // angle[7] = angle[1];
-            // if (angle[7] <= 0)
-            //     angle[8] = angle[7];
+            angle[7] = -angle[4] / 2; //espelhando movimento da perna esq
+
+            //rotação do cotovelo
+            if (angle[7] <= 0)
+                angle[8] = angle[7] * 3;
+
             // movendo e rotação na direção 1
             objs.segmentos.dir[2].matrix.multiply(mat4.makeRotationZ(-angle[6]));
             objs.segmentos.dir[2].matrix.multiply(mat4.makeTranslation(0, metadeSegmBraco, 0.0));
@@ -437,22 +404,21 @@ function main() {
             let metadeSegmTib = getHalfSize("tibia");
 
             if (emRepouso) {
-                console.log("Em repouso..."); //fixme: debug
+                console.log("Em repouso...");
                 if (startAnimation) {
                     iniciarAnimacao();
                 }
             } else {
                 if (stopAnimation) {
                     pararAnimacao();
-                }
-                else if (!pauseAnimation) {
+                } else if (!pauseAnimation) {
                     caminhar();
-                }
-                else {
-                    console.log("Pausado...");//fixme: debug
+                } else {
+                    console.log("Pausado...");
                 }
             }
-            // fixme: para corrigir pisada
+
+            //para corrigir pisada
             let peEsqAlt = getDistToGround(objs.juntas.esq[2]);
             if (peEsqAlt < 1.0) {
                 objs.juntas.esq[0].matrix.multiply(mat4.makeTranslation(0, (1.0 - peEsqAlt), 0.0));
@@ -478,9 +444,10 @@ function main() {
         function pernaDireita() {
             let metadeSegmFem = getHalfSize("femur");
             let metadeSegmTib = getHalfSize("tibia");
-            // angle[10] = -angle[4]; //fixme: verificar
 
-            // fixme: para corrigir pisada
+            angle[10] = -angle[4]; //espelhando movimento da perna esq
+
+            // para corrigir pisada
             let peDirAlt = getDistToGround(objs.juntas.dir[2]);
             if (peDirAlt < 1.0) {
                 objs.juntas.dir[0].matrix.multiply(mat4.makeTranslation(0, (1.0 - peDirAlt), 0.0));
@@ -634,9 +601,6 @@ function main() {
         lightFollowingCamera(spotLight, camera);
         requestAnimationFrame(render); // Show events
 
-        // setTimeout(function () {
-        //     requestAnimationFrame(render);
-        // }, 1000 / 30);
         renderer.render(scene, camera) // Render scene
     }
 }
