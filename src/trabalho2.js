@@ -52,6 +52,7 @@ function main() {
             esq: [],
         },
     };
+    var time = 0;
 
     var sizeSegmentos = {
         pescoco: 0.9,
@@ -76,8 +77,9 @@ function main() {
     var limAnguloPerna = {min: degreesToRadians(-20), max: degreesToRadians(20)};
 
     var speed = degreesToRadians(0.5);
+    let vSpeed = speed;
     var clock = new THREE.Clock();
-    var t = 0.0;
+    var delta = 0.0;
 
     criarJuntas();
     criarSegmentos();
@@ -257,8 +259,11 @@ function main() {
             if (angle[4] < limAnguloPerna.min || angle[4] > limAnguloPerna.max) {
                 inverterSentido = !inverterSentido;
             }
-
             angle[4] += (inverterSentido ? -1 : 1) * speed;
+
+            //rotacionando toda estrutura conforme movimenta pernas
+            // time+=delta*25*radiansToDegrees(speed);
+
             //rotacionando os joelhos a partir da rotaçao da perna
             if (!inverterSentido) {
                 angle[5] += -angle[4] * speed * 10;
@@ -342,6 +347,13 @@ function main() {
 
             // rotacionando toda a estrutura (para acompanhar o movimento)
             objs.juntas.centro[0].matrix.multiply(mat4.makeRotationZ(-rotQuadril / 3));
+
+            //inclinando o tronco conforme a velocidade
+            objs.juntas.centro[0].matrix.multiply(mat4.makeRotationY(speed));//fixme
+            // tirando estrutura do centro
+            // objs.juntas.centro[0].matrix.multiply(mat4.makeRotationY(degreesToRadians(-time)));
+            // objs.juntas.centro[0].matrix.multiply(mat4.makeTranslation(10.0, 0.0, 0.0));
+
         }
 
         function bracoEsquerdo() {
@@ -593,7 +605,7 @@ function main() {
 //   }
 
     function render() {
-        t += clock.getDelta();
+        delta = clock.getDelta();
         stats.update(); // Update FPS
         trackballControls.update();
         // keyboardUpdate(); //não será usado nesse trabalho
