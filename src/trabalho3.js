@@ -72,7 +72,7 @@ class Personagem {
         this.limAnguloPerna = {min: this.deg2Rad(-20), max: this.deg2Rad(20)};
         this.thetaQuadril = this.deg2Rad(45); // inclinação do seg. do quadril
 
-        this.speedRad = this.deg2Rad(0.6);
+        this.speedRad = this.deg2Rad(0.8);
         this.posicao = {
             inicial: new THREE.Vector3(posInicial.x, this.getCenterHeight(this.thetaQuadril), posInicial.z),
             atual: new THREE.Vector3(posInicial.x, this.getCenterHeight(this.thetaQuadril), posInicial.z),
@@ -94,7 +94,11 @@ class Personagem {
     //Métodos para criar o personagem
     createSphere(size, color = 'rgb(66,66,75)') {
         var sphereGeometry = new THREE.SphereGeometry(size, 32, 32);
-        var sphereMaterial = new THREE.MeshPhongMaterial({color: color});
+        var sphereMaterial = new THREE.MeshPhongMaterial({
+            color: color,
+            specular: "rgb(255,255,255)",
+            shininess: "80"
+        });
         var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
         sphere.castShadow = true;
         this.juntas.push(sphere);
@@ -103,7 +107,11 @@ class Personagem {
 
     createCylinder(height, color = 'rgb(239,210,190)') {
         let cylinderGeometry = new THREE.CylinderGeometry(0.02, 0.15, height, 25);
-        let cylinderMaterial = new THREE.MeshPhongMaterial({color: color});
+        let cylinderMaterial = new THREE.MeshPhongMaterial({
+            color: color,
+            specular: "rgb(255,255,255)",
+            shininess: "80"
+        });
         let cylinder = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
         cylinder.castShadow = true;
         this.segmentos.push(cylinder);
@@ -120,7 +128,6 @@ class Personagem {
             this.objs.juntas.dir[i] = this.createSphere(this.sizeJuntas);
             this.objs.juntas.esq[i] = this.createSphere(this.sizeJuntas);
         }
-
     }
 
     criarSegmentos() {
@@ -235,7 +242,8 @@ class Personagem {
             this.clock2 = new THREE.Clock();
             let dt = this.clock.getDelta();
 
-            this.t += dt * this.speedRad * 10;
+            this.t += dt * this.speedRad * 3;
+
             let x = interpolation(this.posicao.inicial.x, this.posicao.destino.x, this.t, easingFunctions.linear);
             let z = interpolation(this.posicao.inicial.z, this.posicao.destino.z, this.t, easingFunctions.linear);
             this.distanciaPercorrida += distance2d(x - this.posicao.atual.x, z - this.posicao.atual.z);
@@ -532,6 +540,10 @@ class Personagem {
 }
 
 function main() {
+    //path para a textura do chão
+    var groundTexture = 'sautumn_grass.png';
+    //path para a textura do skybox
+    var skyboxTexture = 'autumn_park.jpg';
 
     var stats = initStats();
     var scene = new THREE.Scene();
@@ -539,24 +551,29 @@ function main() {
 
     var camera = initCamera(new THREE.Vector3(20, 5, 20));
 
-    //TODO: trocar a iluminação
-    var light = initDefaultLighting(scene, new THREE.Vector3(40, 40, 40));
     //controle do apontador (mouse)
     var controls = new THREE.PointerLockControls(camera, renderer.domElement);
 
-    // Show axes TODO: Retirar Eixos antes de enviar o T3
-    var axesHelper = new THREE.AxesHelper(20);
-    scene.add(axesHelper);
-
     const clock = new THREE.Clock();
 
-    // adicionar sombreamento TODO: trocar a iluminação
-    var spotLight;
-    adicionarSombreamento();
+    // Adicionando luz direcional
+    setDirectionalLighting(new THREE.Vector3(100, 100, 80));
 
     // adicionar plano base
     var groundPlane;
     adicionarPlanoBase();
+
+    //skybox
+    createSkybox();
+
+    //criando postes
+    for (let i = 1, j = false; i < 5; i++, j = !j) {
+        let position = new THREE.Vector3(100 * (j ? -1 : 1), 7.5, 100 * (i > 2 ? -1 : 1));
+        criarPoste(position);
+        position.y = 50
+        setPointLight(position);
+        // setSpotLight(position);
+    }
 
     // To use the keyboard
     var keyboard = new KeyboardState();
@@ -577,12 +594,64 @@ function main() {
     }, false);
 
     function adicionarPlanoBase() {
-        groundPlane = createGroundPlane(1000, 1000, 'rgb(59,98,61)'); // width and height
+        groundPlane = createGroundPlane(1000, 1000); // width and height
         groundPlane.rotateX(degreesToRadians(-90));
+
+        var textureLoader = new THREE.TextureLoader();
+        var grass = textureLoader.load(groundTexture);
+        groundPlane.material.map = grass;
+
+        groundPlane.material.map.repeat.set(300, 300);
+        groundPlane.material.map.wrapS = THREE.RepeatWrapping;
+        groundPlane.material.map.wrapT = THREE.RepeatWrapping;
+        // groundPlane.material.map.minFilter = THREE.LinearFilter;
+        groundPlane.material.map.magFilter = THREE.LinearFilter;
+
         scene.add(groundPlane);
     }
 
+    function createSkybox() {
+        const loader = new THREE.TextureLoader();
+        const texture = loader.load(
+            skyboxTexture,
+            () => {
+                const rt = new THREE.WebGLCubeRenderTarget(texture.image.height);
+                rt.fromEquirectangularTexture(renderer, texture);
+                scene.background = rt;
+            });
+    }
+
+    function criarPoste(position) {
+
+        var sphereGeometry = new THREE.SphereGeometry(1.5, 32, 32);
+        var sphereMaterial = new THREE.MeshPhongMaterial({
+            color: 'rgb(200,200,200)',
+            wireframe: true,
+            specular: "rgb(255,255,255)",
+            shininess: "130"
+        });
+        var lamp = new THREE.Mesh(sphereGeometry, sphereMaterial);
+        lamp.castShadow = false;
+
+        let cylinderGeometry = new THREE.CylinderGeometry(0.5, 0.5, 15, 25);
+        let cylinderMaterial = new THREE.MeshPhongMaterial({
+            color: 'rgb(80,80,80)',
+            specular: "rgb(255,255,255)",
+            shininess: "130"
+        });
+        let poste = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
+        poste.castShadow = false;
+        scene.add(poste);
+
+        poste.add(lamp);
+
+        lamp.translateY(7.5 + 1.5);
+        poste.position.set(position.x, 7.5, position.z);
+
+    }
+
     function setSpotLight(position) {
+        var spotLight = new THREE.SpotLight("rgb(50, 50, 50)");
         spotLight.position.copy(position);
         spotLight.shadow.mapSize.width = 2048;
         spotLight.shadow.mapSize.height = 2048;
@@ -595,10 +664,34 @@ function main() {
         scene.add(spotLight);
     }
 
-    function adicionarSombreamento() {
-        spotLight = new THREE.SpotLight("rgb(50, 50, 50)");
-        setSpotLight(new THREE.Vector3(40, 100, 40));
-        scene.add(spotLight);
+    function setPointLight(position) {
+        var pointLight = new THREE.PointLight('rgb(255,255,255)', 0.08);
+        pointLight.position.copy(position);
+        pointLight.name = "Point Light"
+        pointLight.castShadow = true;
+
+        scene.add(pointLight);
+    }
+
+    //Luz direcional (SOL)
+    function setDirectionalLighting(initialPosition) {
+
+        var dirLight = new THREE.DirectionalLight(0xffffff);
+        dirLight.position.copy(initialPosition);
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.castShadow = true;
+
+        dirLight.shadow.camera.left = -200;
+        dirLight.shadow.camera.right = 200;
+        dirLight.shadow.camera.top = 200;
+        dirLight.shadow.camera.bottom = -200;
+
+        scene.add(dirLight);
+
+        var ambientLight = new THREE.AmbientLight(0x343434);
+        ambientLight.name = "ambientLight";
+        scene.add(ambientLight);
     }
 
     function keyboardUpdate(delta) {
@@ -686,7 +779,7 @@ function main() {
             pObj.updatePersonagem();
         });
 
-        lightFollowingCamera(spotLight, camera);
+        // lightFollowingCamera(spotLight, camera);
         requestAnimationFrame(render); // Show events
 
         renderer.render(scene, camera) // Render scene
